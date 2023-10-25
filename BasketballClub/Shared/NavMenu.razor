@@ -1,0 +1,19 @@
+﻿<div class="sidebar @StateCssClass">
+@* <CascadingAuthenticationState> *@
+	<DxTreeView AllowSelectNodes="true" CssClass="app-sidebar">
+		<Nodes>
+			<DxTreeViewNode NavigateUrl="./" Text="Overview" CssClass="@rootNodeCssClass"></DxTreeViewNode>
+			@* <AuthorizeView Roles="Administrator">
+			<Authorized >*@
+					<DxTreeViewNode NavigateUrl="./Booking" Text="Booking" CssClass="@rootNodeCssClass"></DxTreeViewNode>
+				@* </Authorized>
+			</AuthorizeView> *@
+		</Nodes>
+	</DxTreeView>
+@* </CascadingAuthenticationState> *@
+</div>
+
+@code {
+	const string rootNodeCssClass = "root-item";
+	[Parameter] public string? StateCssClass { get; set; }
+}

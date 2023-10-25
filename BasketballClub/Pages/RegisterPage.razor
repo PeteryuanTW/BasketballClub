@@ -1,0 +1,78 @@
+﻿@page "/Register"
+@inherits AuthComponentBase
+@inject DataService dataService
+@inject NavigationManager nav
+
+<DxGridLayout>
+	<Rows>
+		<DxGridLayoutRow Height="@(((100-height)/2).ToString()+"%")" /> @* the row's height equals 100 pixels *@
+		<DxGridLayoutRow Height="@(height.ToString()+"%")" /> @* the row occupies the remaining space after two other rows are arranged *@
+		<DxGridLayoutRow Height="@(((100-height)/2).ToString()+"%")" /> @* the row's height fits a content object. *@
+	</Rows>
+	<Columns>
+		<DxGridLayoutColumn Width="@(((100-width)/2).ToString()+"%")" />
+		<DxGridLayoutColumn Width="@(width.ToString()+"%")" />
+		<DxGridLayoutColumn Width="@(((100-width)/2).ToString()+"%")" />
+	</Columns>
+	<Items>
+		<DxGridLayoutItem Row="1" Column="1">
+			<Template>
+				<DxFormLayout>
+					<DxFormLayoutGroup Caption="Register" ColSpanLg="12">
+						<DxFormLayoutItem Caption="Employee ID" BeginRow="true" ColSpanLg="12">
+							<DxSpinEdit @bind-Value="id" MinValue="1"></DxSpinEdit>
+						</DxFormLayoutItem>
+						<DxFormLayoutItem Caption="User Name" BeginRow="true" ColSpanLg="12">
+							<DxTextBox @bind-Text="username"></DxTextBox>
+						</DxFormLayoutItem>
+						<DxFormLayoutItem Caption="Password" BeginRow="true" ColSpanLg="12">
+							<DxTextBox @bind-Text="password" Password="true"></DxTextBox>
+						</DxFormLayoutItem>
+						<DxFormLayoutItem BeginRow="true">
+							<DxButton Text="Register" Click="(async()=>{await RegisterClicked();})"></DxButton>
+						</DxFormLayoutItem>
+					</DxFormLayoutGroup>
+				</DxFormLayout>
+			</Template>
+		</DxGridLayoutItem>
+	</Items>
+</DxGridLayout>
+
+@code {
+	private int height = 40;
+	private int width = 30;
+
+
+	public int id;
+	public string username;
+	public string password;
+
+	public async Task RegisterClicked()
+	{
+		bool res_register = false;
+		if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+		{
+			res_register = false;
+		}
+		else
+		{
+			UserInfo userInfo = new UserInfo
+				{
+					EmployeeId = id,
+					UserName = username,
+					Password = PasswordHelper.HashPassword(password),
+					UserRole = 1,
+					SessionKey = "",
+				};
+			res_register = await dataService.RegisterUserInfo(userInfo);
+		}
+		if (res_register)
+		{
+			bool res_login = await UserLoginAsync(username, password);
+			if (res_login)
+			{
+				nav.NavigateTo("/");
+			}
+		}
+	}
+}

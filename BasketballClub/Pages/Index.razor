@@ -1,0 +1,67 @@
+﻿@page "/"
+@inject DataService dataService
+<DxScheduler StartDate="@DateTime.Today"
+			 DataStorage="@dxSchedulerDataStorage">
+	<Views>
+		<DxSchedulerWorkWeekView VisibleTime="new DxSchedulerTimeSpanRange(TimeSpan.FromHours(18), TimeSpan.FromHours(21))"></DxSchedulerWorkWeekView>
+	</Views>
+	<AppointmentFormHeaderTemplate></AppointmentFormHeaderTemplate>
+	<AppointmentFormLayout>aaa</AppointmentFormLayout>
+</DxScheduler>
+
+@code {
+	private IEnumerable<Game> games;
+	IEnumerable<DxSchedulerAppointment> dxSchedulerAppointments;
+	private DxSchedulerDataStorage dxSchedulerDataStorage;
+
+	protected override async Task OnInitializedAsync()
+	{
+		games = await dataService.GetAllGames();
+		dxSchedulerAppointments = GamesToAppoinments(games);
+		dxSchedulerDataStorage = ConvertToDxSchedulerDataStorage();
+	}
+
+	private DxSchedulerDataStorage ConvertToDxSchedulerDataStorage()
+	{
+		return new DxSchedulerDataStorage()
+			{
+				AppointmentsSource = dxSchedulerAppointments,
+				AppointmentMappings = new DxSchedulerAppointmentMappings()
+				{
+					Type = "AppointmentType",
+					Start = "StartDate",
+					End = "EndDate",
+					Subject = "Caption",
+					AllDay = "AllDay",
+					Location = "Location",
+					Description = "Description",
+					LabelId = "Label",
+					StatusId = "Status",
+				}
+			};
+	}
+
+	private List<DxSchedulerAppointment> GamesToAppoinments(IEnumerable<Game> games)
+	{
+		List<DxSchedulerAppointment> res = new();
+		foreach (Game game in games)
+		{
+			Random r = new();
+			int styleCode = r.Next(1, 11);
+			DxSchedulerAppointment tmp = new DxSchedulerAppointment
+				{
+					AppointmentType = 0,
+					StartDate = game.StartTime,
+					EndDate = game.EndTine,
+					Caption = game.Host,
+					Description = game.Id,
+					Location = game.Place,
+					Label = styleCode,
+					Status = styleCode,
+					AllDay = false,
+				};
+			res.Add(tmp);
+		}
+		return res;
+	}
+}

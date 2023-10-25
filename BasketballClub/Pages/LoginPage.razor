@@ -1,0 +1,55 @@
+﻿@page "/Login"
+@inherits AuthComponentBase
+@inject NavigationManager nav;
+
+<DxGridLayout>
+	<Rows>
+		<DxGridLayoutRow Height="@(((100-height)/2).ToString()+"%")" /> @* the row's height equals 100 pixels *@
+		<DxGridLayoutRow Height="@(height.ToString()+"%")" /> @* the row occupies the remaining space after two other rows are arranged *@
+		<DxGridLayoutRow Height="@(((100-height)/2).ToString()+"%")" /> @* the row's height fits a content object. *@
+	</Rows>
+	<Columns>
+		<DxGridLayoutColumn Width="@(((100-width)/2).ToString()+"%")" />
+		<DxGridLayoutColumn Width="@(width.ToString()+"%")" />
+		<DxGridLayoutColumn Width="@(((100-width)/2).ToString()+"%")" />
+	</Columns>
+	<Items>
+		<DxGridLayoutItem Row="1" Column="1">
+			<Template>
+				<DxFormLayout>
+					<DxFormLayoutGroup Caption="Login" ColSpanLg="12">
+						<DxFormLayoutItem Caption="User Name" BeginRow="true" ColSpanLg="12">
+							<DxTextBox @bind-Text="username"></DxTextBox>
+						</DxFormLayoutItem>
+						<DxFormLayoutItem Caption="Password" BeginRow="true" ColSpanLg="12">
+							<DxTextBox @bind-Text="password" Password="true"></DxTextBox>
+						</DxFormLayoutItem>
+						<DxFormLayoutItem BeginRow="true" ColSpanLg="12">
+							<div style="text-align:center">
+								<DxButton Text="Login" Click="LoginClicked"></DxButton>
+							</div>
+							
+						</DxFormLayoutItem>
+					</DxFormLayoutGroup>
+				</DxFormLayout>
+			</Template>
+		</DxGridLayoutItem>
+	</Items>
+</DxGridLayout>
+
+
+@code {
+	public string username;
+	public string password;
+
+	private int height = 40;
+	private int width = 30;
+
+	public async void LoginClicked()
+	{
+		if (await UserLoginAsync(username, password))
+		{
+			nav.NavigateTo("/");
+		}
+	}
+}

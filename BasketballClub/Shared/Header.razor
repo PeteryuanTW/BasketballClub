@@ -1,0 +1,56 @@
+﻿@using static BasketballClub.Service.CustomAuthenticationService;
+@inherits AuthComponentBase
+@inject NavigationManager nav
+@* <nav class="navbar header-navbar p-0"> *@
+@* <button class="navbar-toggler bg-primary d-block" @onclick="OnToggleClick">
+	<span class="navbar-toggler-icon"></span>
+	</button>
+	<div class="ms-3 fw-bold title pe-4">BasketballClub</div> *@
+<CascadingAuthenticationState>
+	<AuthorizeView>
+		<Authorized>
+			<DxToolbar ItemRenderStyleMode="ToolbarRenderStyleMode.Plain" Title="@("Hi, "+userInfo.UserName+"(" + (Roles)userInfo.UserRole + ")")">
+				<DxToolbarItem Text="Logout" RenderStyle="ButtonRenderStyle.Danger" Click="(async()=>{await Logout();})" BeginGroup="true" />
+			</DxToolbar>
+		</Authorized>
+		<NotAuthorized>
+			<DxToolbar ItemRenderStyleMode="ToolbarRenderStyleMode.Plain">
+				<DxToolbarItem Text="Login" RenderStyle="ButtonRenderStyle.Success" Click="Login" BeginGroup="true" />
+				<DxToolbarItem Text="Register" RenderStyle="ButtonRenderStyle.Info" Click="Register" BeginGroup="true" />
+			</DxToolbar>
+		</NotAuthorized>
+	</AuthorizeView>
+</CascadingAuthenticationState>
+@* </nav> *@
+
+@code {
+	[Parameter] public bool ToggleOn { get; set; }
+	[Parameter] public EventCallback<bool> ToggleOnChanged { get; set; }
+
+	async Task OnToggleClick() => await Toggle();
+
+	async Task Toggle(bool? value = null)
+	{
+		var newValue = value ?? !ToggleOn;
+		if (ToggleOn != newValue)
+		{
+			ToggleOn = newValue;
+			await ToggleOnChanged.InvokeAsync(ToggleOn);
+		}
+	}
+
+	private void Login()
+	{
+		nav.NavigateTo("/Login");
+	}
+	private void Register()
+	{
+		nav.NavigateTo("/Register");
+	}
+	private async Task Logout()
+	{
+		if (await UserLogoutAsync())
+			nav.NavigateTo("/");
+	}
+
+}
