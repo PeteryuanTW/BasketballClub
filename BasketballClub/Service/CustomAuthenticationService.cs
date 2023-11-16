@@ -14,7 +14,11 @@ namespace BasketballClub.Service
 			Standard,
 			Administrator
 		}
-		public UserInfo userInfo { get; set; } = new();
+		public CustomAuthenticationService()
+		{
+
+		}
+        public UserInfo userInfo { get; set; } = new();
 		public bool IsAuthenticated() => (userInfo.EmployeeId != 0);
 		public readonly string[] RoleTypes = Enum.GetNames<Roles>();
 		public override Task<AuthenticationState> GetAuthenticationStateAsync()

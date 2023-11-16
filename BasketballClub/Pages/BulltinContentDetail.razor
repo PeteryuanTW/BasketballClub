@@ -1,0 +1,93 @@
+﻿@page "/BulltinContentDetail/{id}"
+@inject DataService dataService
+<style>
+	.groupformheader {
+		--dxbl-group-header-padding-x: 0rem;
+		--dxbl-group-header-padding-y: 0rem;
+	}
+
+	.high {
+		background-color: rgb(220, 56, 72);
+		border-radius: 5px;
+		color: white;
+		font-size: x-large;
+	}
+
+	.medium {
+		background-color: rgb(255, 193, 53);
+		border-radius: 5px;
+		color: black;
+		font-size: x-large;
+	}
+
+	.low {
+		background-color: rgb(13, 204, 242);
+		border-radius: 5px;
+		color: black;
+		padding-top: 0px;
+		font-size: x-large;
+	}
+
+	.unknow {
+		background-color: rgb(255, 255, 255);
+		border-radius: 5px;
+		color: black;
+		font-size: x-large;
+	}
+</style>
+<DxFormLayout Data="currentBulltinContent" SizeMode="SizeMode.Large">
+	<DxFormLayoutGroup HeaderCssClass="groupformheader">
+		<HeaderContentTemplate>
+			<div class="@GetPriorityColor(currentBulltinContent.Priority)" style="width:100% ;padding:0.3rem; flex-flow:row wrap; display: flex;">
+				<div>
+					@currentBulltinContent.Title
+				</div>
+				<div style="position:absolute; right:3%">
+					<DxCheckBox @bind-Checked="editMode"C CheckType="CheckType.Switch">Edit Mode</DxCheckBox>
+				</div>
+			</div>
+
+		</HeaderContentTemplate>
+		<Items>
+			<DxFormLayoutItem ReadOnly="true" Field="@nameof(BulltinContent.Author)" Caption="Author" CaptionPosition="CaptionPosition.Vertical" ColSpanLg="1">
+			</DxFormLayoutItem>
+			<DxFormLayoutItem BeginRow="true" ColSpanLg="12">
+				<DxMemo ReadOnly="@(!editMode)" @bind-Text="@currentBulltinContent.Description"></DxMemo>
+			</DxFormLayoutItem>
+		</Items>
+	</DxFormLayoutGroup>
+</DxFormLayout>
+@code {
+	[Parameter]
+	public string id { get; set; }
+
+	private BulltinContent currentBulltinContent;
+
+	private bool editMode = false;
+
+	protected override async Task OnInitializedAsync()
+	{
+		currentBulltinContent = await dataService.GetActivityByID(id);
+	}
+
+	private string GetPriorityColor(int p)
+	{
+		string res = "";
+		switch (p)
+		{
+			case 0:
+				res = "high";
+				break;
+			case 1:
+				res = "medium";
+				break;
+			case 2:
+				res = "low";
+				break;
+			default:
+				res = "unknow";
+				break;
+		}
+		return res;
+	}
+}

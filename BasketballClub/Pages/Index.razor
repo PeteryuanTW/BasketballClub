@@ -1,66 +1,105 @@
 ﻿@page "/"
 @inject DataService dataService
-<DxScheduler StartDate="@DateTime.Today"
-			 DataStorage="@dxSchedulerDataStorage">
-	<Views>
-		<DxSchedulerWorkWeekView VisibleTime="new DxSchedulerTimeSpanRange(TimeSpan.FromHours(18), TimeSpan.FromHours(21))"></DxSchedulerWorkWeekView>
-	</Views>
-	<AppointmentFormHeaderTemplate></AppointmentFormHeaderTemplate>
-	<AppointmentFormLayout>aaa</AppointmentFormLayout>
-</DxScheduler>
+@inject NavigationManager nav
+
+<DxGridLayout>
+	<Rows>
+		<DxGridLayoutRow />
+	</Rows>
+	<Columns>
+		<DxGridLayoutColumn />
+		<DxGridLayoutColumn />
+	</Columns>
+	<Items>
+		<DxGridLayoutItem Row="0" Column="0">
+			<Template>
+				<DxGrid Data="@bulltinContents">
+					<Columns>
+						<DxGridDataColumn FieldName="Title" />
+						<DxGridDataColumn FieldName="Author" />
+						<DxGridDataColumn FieldName="Priority">
+							<CellDisplayTemplate>
+								@{
+									int priority = (context.DataItem as BulltinContent).Priority;
+									<div style="text-align:center">
+										<DxButton Text="@GetPriorityString(priority)" RenderStyle="@GetPriorityRender(priority)" Enabled="false" />
+									</div>
+								}
+							</CellDisplayTemplate>
+						</DxGridDataColumn>
+						<DxGridDataColumn FieldName="Id" Caption="Detail">
+							<CellDisplayTemplate>
+								@{
+									string id = (context.DataItem as BulltinContent).Id;
+									<div style="text-align:center">
+										<DxButton Click="@(async ()=>{await GetActivityByID(id);})" RenderStyle="ButtonRenderStyle.Info" CssClass="oi oi-magnifying-glass"></DxButton>
+									</div>
+								}
+							</CellDisplayTemplate>
+						</DxGridDataColumn>
+					</Columns>
+				</DxGrid>
+			</Template>
+		</DxGridLayoutItem>
+		<DxGridLayoutItem Row="0" Column="1">
+		</DxGridLayoutItem>
+	</Items>
+</DxGridLayout>
+
+
 
 @code {
-	private IEnumerable<Game> games;
-	IEnumerable<DxSchedulerAppointment> dxSchedulerAppointments;
-	private DxSchedulerDataStorage dxSchedulerDataStorage;
+	private IEnumerable<BulltinContent> bulltinContents;
+	private BulltinContent currentBulltinContent;
 
 	protected override async Task OnInitializedAsync()
 	{
-		games = await dataService.GetAllGames();
-		dxSchedulerAppointments = GamesToAppoinments(games);
-		dxSchedulerDataStorage = ConvertToDxSchedulerDataStorage();
+		bulltinContents = await dataService.GetAllActivities();
 	}
 
-	private DxSchedulerDataStorage ConvertToDxSchedulerDataStorage()
+	private async Task GetActivityByID(string id)
 	{
-		return new DxSchedulerDataStorage()
-			{
-				AppointmentsSource = dxSchedulerAppointments,
-				AppointmentMappings = new DxSchedulerAppointmentMappings()
-				{
-					Type = "AppointmentType",
-					Start = "StartDate",
-					End = "EndDate",
-					Subject = "Caption",
-					AllDay = "AllDay",
-					Location = "Location",
-					Description = "Description",
-					LabelId = "Label",
-					StatusId = "Status",
-				}
-			};
+		nav.NavigateTo("/BulltinContentDetail/" + id);
 	}
 
-	private List<DxSchedulerAppointment> GamesToAppoinments(IEnumerable<Game> games)
+	private string GetPriorityString(int p)
 	{
-		List<DxSchedulerAppointment> res = new();
-		foreach (Game game in games)
+		string res = "";
+		switch (p)
 		{
-			Random r = new();
-			int styleCode = r.Next(1, 11);
-			DxSchedulerAppointment tmp = new DxSchedulerAppointment
-				{
-					AppointmentType = 0,
-					StartDate = game.StartTime,
-					EndDate = game.EndTine,
-					Caption = game.Host,
-					Description = game.Id,
-					Location = game.Place,
-					Label = styleCode,
-					Status = styleCode,
-					AllDay = false,
-				};
-			res.Add(tmp);
+			case 0:
+				res = "High";
+				break;
+			case 1:
+				res = "Medium";
+				break;
+			case 2:
+				res = "Low";
+				break;
+			default:
+				res = "Unknow";
+				break;
+		}
+		return res;
+	}
+
+	private ButtonRenderStyle GetPriorityRender(int p)
+	{
+		ButtonRenderStyle res;
+		switch (p)
+		{
+			case 0:
+				res = ButtonRenderStyle.Danger;
+				break;
+			case 1:
+				res = ButtonRenderStyle.Warning;
+				break;
+			case 2:
+				res = ButtonRenderStyle.Success;
+				break;
+			default:
+				res = ButtonRenderStyle.Secondary;
+				break;
 		}
 		return res;
 	}

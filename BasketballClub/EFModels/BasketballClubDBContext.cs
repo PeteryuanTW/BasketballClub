@@ -16,6 +16,7 @@ namespace BasketballClub.EFModels
         {
         }
 
+        public virtual DbSet<BulltinContent> BulltinContents { get; set; } = null!;
         public virtual DbSet<Court> Courts { get; set; } = null!;
         public virtual DbSet<Game> Games { get; set; } = null!;
         public virtual DbSet<GameParticipant> GameParticipants { get; set; } = null!;
@@ -32,6 +33,19 @@ namespace BasketballClub.EFModels
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<BulltinContent>(entity =>
+            {
+                entity.ToTable("BulltinContent");
+
+                entity.Property(e => e.Id)
+                    .HasMaxLength(50)
+                    .HasColumnName("ID");
+
+                entity.Property(e => e.Author).HasMaxLength(50);
+
+                entity.Property(e => e.Title).HasMaxLength(50);
+            });
+
             modelBuilder.Entity<Court>(entity =>
             {
                 entity.HasKey(e => e.CourtName);

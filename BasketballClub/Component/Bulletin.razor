@@ -1,0 +1,14 @@
+﻿
+@code {
+	private IEnumerable<BulltinContent> bulltinContents;
+
+	protected override Task OnInitializedAsync()
+	{
+		bulltinContents = new List<BulltinContent>
+		{
+			new BulltinContent {Title="1", Description="111" },
+			new BulltinContent {Title="2", Description="222" },
+		};
+		return base.OnInitializedAsync();
+	}
+}

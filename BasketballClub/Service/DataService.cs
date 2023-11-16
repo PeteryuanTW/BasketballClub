@@ -103,7 +103,7 @@ namespace BasketballClub.Service
 			}
 		}
 
-		public async Task<bool> AddNewGame(Game newGame)
+		public async Task<(bool, string)> UpsertGame(Game newGame)
 		{
 			try
 			{
@@ -115,30 +115,34 @@ namespace BasketballClub.Service
 					{
 						if (res.Host != newGame.Host)
 						{
-							return false;
+							return (false, "Game host not match");
 						}
 						else
 						{
 							res.Place = newGame.Place;
 							res.StartTime = newGame.StartTime;
 							res.EndTine = newGame.EndTine;
+
+							await context.SaveChangesAsync();
+							await OnGameUpdateAsync();
+							return (true, "Update game " + newGame.Id + " success");
 						}
 					}
 					else
 					{
 						await context.AddAsync(newGame);
+						await context.SaveChangesAsync();
+						await OnGameUpdateAsync();
+						return (true, "Add game " + newGame.Id + " success");
 					}
-					await context.SaveChangesAsync();
-					await OnGameUpdateAsync();
-					return true;
 				}
 			}
 			catch (Exception e)
 			{
-				return false;
+				return (false, e.Message);
 			}
 		}
-		public async Task<bool> RemoveGameByID(string gameId)
+		public async Task<(bool, string)> RemoveGameByID(string gameId)
 		{
 			try
 			{
@@ -160,12 +164,12 @@ namespace BasketballClub.Service
 						await context.SaveChangesAsync();
 					}
 					await OnGameUpdateAsync();
-					return true;
+					return (true, "Delete game "+ gameId + " success");
 				}
 			}
 			catch (Exception e)
 			{
-				return false;
+				return (false, e.Message);
 			}
 		}
 		#endregion
@@ -190,7 +194,7 @@ namespace BasketballClub.Service
 				return Task.FromResult(context.GameParticipants.AsNoTracking().Where(x=>x.Id == gamdID).ToList());
 			}
 		}
-		public async Task<bool> JoinGame(GameParticipant gameParticipant)
+		public async Task<(bool, string)> JoinGame(GameParticipant gameParticipant)
 		{
 			using (var scope = scopeFactory.CreateScope())
 			{
@@ -200,13 +204,14 @@ namespace BasketballClub.Service
 				{
 					if (gameParticipant.Amount > 0)
 					{
+						//update amount
 						res.Amount = gameParticipant.Amount;
 						await context.SaveChangesAsync();
-						return true;
+						return (true, "Update game "+ gameParticipant.Id + " success");
 					}
 					else
 					{
-						return false;
+						return (false, "Update game " + gameParticipant.Id + " fail(join amount should more than 0)");
 					}
 				}
 				else
@@ -215,17 +220,17 @@ namespace BasketballClub.Service
 					{
 						await context.AddAsync(gameParticipant);
 						await context.SaveChangesAsync();
-						return true;
+						return (true, "Join game " + gameParticipant.Id + " success");
 					}
 					else
 					{
-						return false;
+						return (false, "Join game " + gameParticipant.Id + " fail(join amount should more than 0)");
 					}
 				}
 			}
 		}
 
-		public async Task<bool> LeaveGame(GameParticipant gameParticipant)
+		public async Task<(bool, string)> LeaveGame(GameParticipant gameParticipant)
 		{
 			using (var scope = scopeFactory.CreateScope())
 			{
@@ -243,14 +248,50 @@ namespace BasketballClub.Service
 							await RemoveGameByID(mainGame.Id);
 							await context.SaveChangesAsync();
 						}
-						return true;
+						return (true, "Leave " + gameParticipant.Id + " success");
 					}
 					else
 					{
-						return false;
+						return (false, "Leave " + gameParticipant.Id + " fail(leave amount should less than 0)");
 					}
 				}
 				else
+				{
+					return (false, "Leave " + gameParticipant.Id + " fail("+ gameParticipant.Id + " not found)");
+				}
+			}
+		}
+		#endregion
+
+		#region activity bulltin
+		public Task<List<BulltinContent>> GetAllActivities()
+		{
+			using (var scope = scopeFactory.CreateScope())
+			{
+				var context = scope.ServiceProvider.GetRequiredService<BasketballClubDBContext>();
+				return Task.FromResult(context.BulltinContents.ToList());
+			}
+		}
+		public Task<BulltinContent> GetActivityByID(string id)
+		{
+			using (var scope = scopeFactory.CreateScope())
+			{
+				var context = scope.ServiceProvider.GetRequiredService<BasketballClubDBContext>();
+				return Task.FromResult(context.BulltinContents.FirstOrDefault(x=>x.Id==id));
+			}
+		}
+		public async Task<bool> AddNewActivity(BulltinContent newBulltinContent)
+		{
+			using (var scope = scopeFactory.CreateScope())
+			{
+				try
+				{
+					var context = scope.ServiceProvider.GetRequiredService<BasketballClubDBContext>();
+					await context.AddAsync(newBulltinContent);
+					await context.SaveChangesAsync();
+					return true;
+				}
+				catch (Exception e)
 				{
 					return false;
 				}

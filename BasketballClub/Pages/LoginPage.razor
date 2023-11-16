@@ -26,9 +26,15 @@
 						</DxFormLayoutItem>
 						<DxFormLayoutItem BeginRow="true" ColSpanLg="12">
 							<div style="text-align:center">
-								<DxButton Text="Login" Click="LoginClicked"></DxButton>
+								<DxButton Text="Login" Click="LoginClicked" Context="btnContext">
+									<div class="d-flex">
+										<DxWaitIndicator Visible="isLogin"
+														 CssClass="my-indicator" />
+										<span class="mx-2">@btnText</span>
+									</div>
+								</DxButton>
 							</div>
-							
+
 						</DxFormLayoutItem>
 					</DxFormLayoutGroup>
 				</DxFormLayout>
@@ -39,17 +45,22 @@
 
 
 @code {
+	private bool isLogin = false;
+	string btnText => isLogin ? "Login..." : "Login";
 	public string username;
 	public string password;
 
 	private int height = 40;
 	private int width = 30;
 
-	public async void LoginClicked()
+	public async Task LoginClicked()
 	{
-		if (await UserLoginAsync(username, password))
+		isLogin = true;
+		bool res = await UserLoginAsync(username, password);
+		if (res)
 		{
 			nav.NavigateTo("/");
 		}
+		isLogin = false;
 	}
 }

@@ -1,16 +1,12 @@
 ﻿<div class="sidebar @StateCssClass">
-@* <CascadingAuthenticationState> *@
+	@* <CascadingAuthenticationState> *@
 	<DxTreeView AllowSelectNodes="true" CssClass="app-sidebar">
 		<Nodes>
 			<DxTreeViewNode NavigateUrl="./" Text="Overview" CssClass="@rootNodeCssClass"></DxTreeViewNode>
-			@* <AuthorizeView Roles="Administrator">
-			<Authorized >*@
-					<DxTreeViewNode NavigateUrl="./Booking" Text="Booking" CssClass="@rootNodeCssClass"></DxTreeViewNode>
-				@* </Authorized>
-			</AuthorizeView> *@
+			<DxTreeViewNode NavigateUrl="./Schedule" Text="Schedule" CssClass="@rootNodeCssClass"></DxTreeViewNode>
 		</Nodes>
 	</DxTreeView>
-@* </CascadingAuthenticationState> *@
+	@* </CascadingAuthenticationState> *@
 </div>
 
 @code {

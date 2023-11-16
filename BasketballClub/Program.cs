@@ -30,7 +30,7 @@ builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationService>();
 
 builder.Services.AddBlazoredToast();
-
+builder.Services.AddScoped<UIService>();
 
 builder.WebHost.UseWebRoot("wwwroot");
 builder.WebHost.UseStaticWebAssets();

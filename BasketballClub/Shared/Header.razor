@@ -6,7 +6,7 @@
 	<span class="navbar-toggler-icon"></span>
 	</button>
 	<div class="ms-3 fw-bold title pe-4">BasketballClub</div> *@
-<CascadingAuthenticationState>
+@* <CascadingAuthenticationState>
 	<AuthorizeView>
 		<Authorized>
 			<DxToolbar ItemRenderStyleMode="ToolbarRenderStyleMode.Plain" Title="@("Hi, "+userInfo.UserName+"(" + (Roles)userInfo.UserRole + ")")">
@@ -20,6 +20,45 @@
 			</DxToolbar>
 		</NotAuthorized>
 	</AuthorizeView>
+</CascadingAuthenticationState> *@
+<CascadingAuthenticationState>
+	<div class="card">
+		<DxMenu ItemsPosition="ItemPosition.Start" DropDownActionMode="MenuDropDownActionMode.Click">
+			<TitleTemplate>
+				<DxButton Click="NavToHome" RenderStyle="ButtonRenderStyle.None" Text="TM Basketball" SizeMode="SizeMode.Large"></DxButton>
+			</TitleTemplate>
+			<Items>
+				<AuthorizeView>
+					<Authorized>
+						<DxMenuItem Text="@("Hi, "+userInfo.UserName+"(" + (Roles)userInfo.UserRole + ")")" IconCssClass="oi oi-person">
+							<Items>
+								<DxMenuItem Text="Logout" IconCssClass="oi oi-account-logout" Click="(async()=>{await Logout();})" />
+							</Items>
+						</DxMenuItem>
+						<DxMenuItem Text="Game" IconCssClass="oi oi-spreadsheet">
+							<Items>
+								<DxMenuItem Text="Game Schedule" NavigateUrl="/Schedule" />
+							</Items>
+						</DxMenuItem>
+					</Authorized>
+
+					<NotAuthorized>
+						<DxMenuItem Text="Hi, Guest" IconCssClass="oi oi-person">
+							<Items>
+								<DxMenuItem Text="Login" IconCssClass="oi oi-account-login" NavigateUrl="/Login" />
+								<DxMenuItem Text="Register" IconCssClass="oi oi-pencil" NavigateUrl="/Register" />
+							</Items>
+						</DxMenuItem>
+						<DxMenuItem Text="Game" IconCssClass="oi oi-spreadsheet">
+							<Items>
+								<DxMenuItem Text="Game Schedule" IconCssClass="oi oi-bar-chart" NavigateUrl="/Schedule" />
+							</Items>
+						</DxMenuItem>
+					</NotAuthorized>
+				</AuthorizeView>
+			</Items>
+		</DxMenu>
+	</div>
 </CascadingAuthenticationState>
 @* </nav> *@
 
@@ -39,18 +78,15 @@
 		}
 	}
 
-	private void Login()
-	{
-		nav.NavigateTo("/Login");
-	}
-	private void Register()
-	{
-		nav.NavigateTo("/Register");
-	}
 	private async Task Logout()
 	{
 		if (await UserLogoutAsync())
 			nav.NavigateTo("/");
 	}
+	private void NavToHome()
+	{
+		nav.NavigateTo("/");
+	}
+
 
 }

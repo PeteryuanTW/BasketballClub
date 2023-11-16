@@ -1,0 +1,321 @@
+﻿@page "/Schedule"
+@inject UIService uiService
+@inject IToastService toastService
+@inject DataService dataService
+@inherits AuthComponentBase
+<style>
+	.popup-text-header {
+		margin-right: auto;
+		text-overflow: ellipsis;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+</style>
+<DxScheduler StartDate="@DateTime.Today"
+			 DataStorage="@dxSchedulerDataStorage" ShowAppointmentTooltip="false" AppointmentFormMode="SchedulerAppointmentFormMode.EditForm"
+			 AllowCreateAppointment="userInfo.EmployeeId != 0" AllowResizeAppointment="false"
+			 AppointmentFormShown="SelectGame" AppointmentUpdated="UpdateGame" AppointmentInserted="InsertGame" AppointmentRemoved="DeleteGame">
+	<Views>
+		<DxSchedulerWorkWeekView VisibleTime="new DxSchedulerTimeSpanRange(TimeSpan.FromHours(18), TimeSpan.FromHours(21))">
+			<VerticalAppointmentTemplate>
+				<div class="card @context.Label.BackgroundCssClass" style="height: 100%; padding: 0.2em 0.5em; opacity: 0.9; border:dotted; border-width:0.2em">
+					<div>@context.Appointment.Location</div>
+					<div>@context.Appointment.Start.ToString("HH:mm") ~ @context.Appointment.End.ToString("HH:mm")</div>
+					<div>@context.Appointment.CustomFields["Host"]</div>
+				</div>
+			</VerticalAppointmentTemplate>
+		</DxSchedulerWorkWeekView>
+	</Views>
+	<AppointmentFormHeaderTemplate>
+		<div class="popup-text-header">@title</div>
+		@if (userInfo.UserName != null)
+		{
+			<DxSchedulerSaveAppointmentChangesButton Text=" "></DxSchedulerSaveAppointmentChangesButton>
+		}
+		@if (CheckEditable(currentGame.Host))
+		{
+			<DxSchedulerDeleteAppointmentButton Text=" "></DxSchedulerDeleteAppointmentButton>
+		}
+		<DxSchedulerDiscardAppointmentChangesButton Text=" "></DxSchedulerDiscardAppointmentChangesButton>
+	</AppointmentFormHeaderTemplate>
+	<AppointmentFormLayout Context="formInfo">
+		<DxFormLayoutTabPages>
+			<DxFormLayoutTabPage Caption="General Information">
+				<div style="padding: 1em;">
+					<DxFormLayout>
+						<DxFormLayoutItem Caption="Host" CaptionPosition="CaptionPosition.Vertical">
+							<DxTextBox Text="@currentGame.Host" Enabled="false"></DxTextBox>
+						</DxFormLayoutItem>
+						<DxFormLayoutItem Caption="Location" CaptionPosition="CaptionPosition.Vertical" BeginRow="true">
+							<DxComboBox @bind-Value="@currentCourt" Data="courts" EditFormat="{0}({1})" Enabled="@CheckEditable(currentGame.Host)">
+								<Columns>
+									<DxListEditorColumn FieldName="CourtName" />
+									<DxListEditorColumn FieldName="NickName" />
+								</Columns>
+							</DxComboBox>
+						</DxFormLayoutItem>
+						<DxFormLayoutItem Caption="Start" CaptionPosition="CaptionPosition.Vertical" BeginRow="true">
+							<DxDateEdit @bind-Date="@currentGame.StartTime" Enabled="@CheckEditable(currentGame.Host)" TimeSectionVisible="true" DisplayFormat="G"></DxDateEdit>
+						</DxFormLayoutItem>
+						<DxFormLayoutItem Caption="End" CaptionPosition="CaptionPosition.Vertical">
+							<DxDateEdit @bind-Date="@currentGame.EndTine" Enabled="@CheckEditable(currentGame.Host)" TimeSectionVisible="true"></DxDateEdit>
+						</DxFormLayoutItem>
+						<DxFormLayoutItem Caption="@amountHint" CaptionPosition="CaptionPosition.Vertical" BeginRow="true">
+							<DxSpinEdit @bind-Value="@amount" Enabled="@newGame" MinValue="1"></DxSpinEdit>
+						</DxFormLayoutItem>
+					</DxFormLayout>
+				</div>
+				@* <DxSchedulerLocationFormLayoutItem/>
+				<DxSchedulerStartDateFormLayoutItem/>
+				<DxSchedulerStartTimeFormLayoutItem/>
+				<DxSchedulerEndDateFormLayoutItem/>
+				<DxSchedulerEndTimeFormLayoutItem/> *@
+			</DxFormLayoutTabPage>
+			@if (gameParticipants != null)
+			{
+				<DxFormLayoutTabPage Caption="Participants">
+					<div style="padding: 1em;">
+						<DxFormLayout>
+							<DxFormLayoutGroup Caption="Particapants">
+								@foreach (GameParticipant gameParticipant in gameParticipants)
+								{
+									<DxFormLayoutItem Caption="@gameParticipant.ParticipantName">
+										<DxSpinEdit @bind-Value="@gameParticipant.Amount" Enabled="@CheckEditable(gameParticipant.ParticipantName)" MinValue="0"></DxSpinEdit>
+									</DxFormLayoutItem>
+								}
+							</DxFormLayoutGroup>
+							@if (!gameParticipants.Any(x => x.ParticipantName == userInfo.UserName) && userInfo.UserName != null)
+							{
+								<DxFormLayoutGroup Caption="New Particapant" ColSpanLg="12">
+									<DxFormLayoutItem Caption="@userInfo.UserName" BeginRow="true">
+										<DxSpinEdit @bind-Value="@amount_new" MinValue="1"></DxSpinEdit>
+									</DxFormLayoutItem>
+								</DxFormLayoutGroup>
+							}
+						</DxFormLayout>
+					</div>
+				</DxFormLayoutTabPage>
+			}
+		</DxFormLayoutTabPages>
+	</AppointmentFormLayout>
+</DxScheduler>
+
+@code {
+	private string title;
+	private IEnumerable<Game> games;
+	private Game currentGame;
+	private bool newGame;
+
+	private IEnumerable<Court> courts;
+	private Court currentCourt;
+
+	private DateTime _startTime;
+	private DateTime _endTime;
+	private string amountHint;
+	private int amount;
+	private int amount_new;
+
+	IEnumerable<DxSchedulerAppointment> dxSchedulerAppointments;
+	private DxSchedulerDataStorage dxSchedulerDataStorage;
+
+	private IEnumerable<GameParticipant> gameParticipants;
+
+
+
+	protected override async Task OnInitializedAsync()
+	{
+		uiService.ShowPanel();
+		await base.OnInitializedAsync();
+		dataService.GameUpdateAct += GetGamesUpdate;
+		games = await dataService.GetAllGames();
+		courts = await dataService.GetAllCourts();
+		TransformToScheduler();
+		uiService.ClosePanel();
+	}
+
+	private void TransformToScheduler()
+	{
+		dxSchedulerAppointments = GamesToAppoinments(games);
+		dxSchedulerDataStorage = ConvertToDxSchedulerDataStorage();
+	}
+
+	private void GetGamesUpdate(List<Game> newGames)
+	{
+		InvokeAsync(() =>
+		{
+			uiService.ShowPanel();
+			games = newGames;
+			TransformToScheduler();
+			StateHasChanged();
+			uiService.ClosePanel();
+		});
+	}
+	//transform to scheduler
+	private DxSchedulerDataStorage ConvertToDxSchedulerDataStorage()
+	{
+		return new DxSchedulerDataStorage()
+			{
+				AppointmentsSource = dxSchedulerAppointments,
+				AppointmentMappings = new DxSchedulerAppointmentMappings()
+				{
+					Type = "AppointmentType",
+					Start = "StartDate",
+					End = "EndDate",
+					Location = "Location",
+					Description = "Description",
+					LabelId = "Label",
+					StatusId = "Status",
+					CustomFieldMappings = new List<DxSchedulerCustomFieldMapping>
+					{
+						new DxSchedulerCustomFieldMapping
+						{
+							Name = "Host", Mapping = "Host"
+						},
+						new DxSchedulerCustomFieldMapping
+						{
+							Name = "Id", Mapping = "Id"
+						}
+					}
+				}
+			};
+	}
+
+	private List<DxSchedulerAppointment> GamesToAppoinments(IEnumerable<Game> games)
+	{
+		List<DxSchedulerAppointment> res = new();
+		foreach (Game game in games)
+		{
+			int styleCode = GetDayStatusCode(game.StartTime);
+			DxSchedulerAppointment tmp = new DxSchedulerAppointment
+				{
+					Id = game.Id,
+					AppointmentType = 0,
+					Host = game.Host,
+					StartDate = game.StartTime,
+					EndDate = game.EndTine,
+					Location = game.Place,
+					Label = styleCode,
+					Status = styleCode,
+				};
+			res.Add(tmp);
+		}
+		return res;
+	}
+
+	//double click
+	private async Task SelectGame(DxSchedulerAppointmentItem appointment)
+	{
+		newGame = appointment.IsNew;
+		if (!newGame)
+		{
+			string gameId = appointment.CustomFields["Id"].ToString();
+			currentGame = await dataService.GetGameByID(gameId);
+			title = currentGame.Place + "(" + currentGame.Host + ")";
+			currentCourt = courts.FirstOrDefault(x => x.CourtName == appointment.Location);
+			gameParticipants = await dataService.GetParticipantsByGameID(gameId);
+			amount = gameParticipants.Sum(x => x.Amount);
+			amountHint = "Total Amount";
+		}
+		else
+		{
+			title = "New Game(" + userInfo.UserName + ")";
+			_startTime = appointment.Start;
+			_endTime = appointment.End;
+			amount = 1;
+			amountHint = "Amount";
+			currentCourt = courts.FirstOrDefault();
+			currentGame = new Game
+				{
+					Id = Guid.NewGuid().ToString(),
+					Host = userInfo.UserName,
+					Place = currentCourt.CourtName,
+					StartTime = _startTime,
+					EndTine = _endTime,
+				};
+			gameParticipants = null;
+		}
+	}
+	//save exist game
+	private async Task UpdateGame(DxSchedulerAppointmentItem appointment)
+	{
+		//for game
+		currentGame.Place = currentCourt.CourtName;
+		await dataService.UpsertGame(currentGame);
+		//for host
+		GameParticipant selfDetail = gameParticipants.FirstOrDefault(x => x.ParticipantName == userInfo.UserName);
+		if (selfDetail != null)
+		{
+			if (selfDetail.Amount > 0)
+			{
+				(bool, string) res = await dataService.JoinGame(selfDetail);
+				ShowToastMsg(res);
+			}
+			else
+			{
+				(bool, string) res = await dataService.LeaveGame(selfDetail);
+				ShowToastMsg(res);
+			}
+		}
+		//for participant
+		else
+		{
+			(bool, string) res = await dataService.JoinGame(new GameParticipant { Id = currentGame.Id, ParticipantName = userInfo.UserName, Amount = amount_new });
+			ShowToastMsg(res);
+		}
+	}
+	//click aon blank area
+	private async Task InsertGame(DxSchedulerAppointmentItem appointment)
+	{
+		//for game
+		currentGame.Place = currentCourt.CourtName;
+		(bool, string) res = await dataService.UpsertGame(currentGame);
+		ShowToastMsg(res);
+		res = await dataService.JoinGame(new GameParticipant { Id = currentGame.Id, ParticipantName = currentGame.Host, Amount = amount });
+		ShowToastMsg(res);
+	}
+
+	private async Task DeleteGame(DxSchedulerAppointmentItem appointment)
+	{
+		if (!appointment.IsNew)
+		{
+			(bool, string) res = await dataService.RemoveGameByID(currentGame.Id);
+			ShowToastMsg(res);
+		}
+	}
+
+	private void ShowToastMsg((bool, string) res)
+	{
+		if (res.Item1)
+		{
+			toastService.ShowSuccess(res.Item2);
+		}
+		else
+		{
+			toastService.ShowError(res.Item2);
+		}
+	}
+
+	private bool CheckEditable(string name)
+	{
+		if (name == userInfo.UserName)
+			return true;
+		else
+			return false;
+	}
+
+	private int GetDayStatusCode(DateTime dt)
+	{
+		if (dt.Date < DateTime.Now.Date)
+		{
+			return 2;
+		}
+		else if (dt.Date == DateTime.Now.Date)
+		{
+			return 8;
+		}
+		else
+		{
+			return 10;
+		}
+	}
+}
